@@ -1,0 +1,62 @@
+### IntelliJ / JetBrains ###
+
+.idea/
+
+*.iml
+
+*.iws
+
+*.ipr
+
+
+
+# Local IDE settings
+
+out/
+
+
+
+### Maven ###
+
+target/
+
+pom.xml.tag
+
+pom.xml.releaseBackup
+
+pom.xml.versionsBackup
+
+pom.xml.next
+
+release.properties
+
+
+
+### Logs ###
+
+*.log
+
+logs/
+
+
+
+### OS files ###
+
+.DS_Store
+
+Thumbs.db
+
+
+
+### Java ###
+
+*.class
+
+
+
+### Others ###
+
+/bin/
+
+/build/
+
