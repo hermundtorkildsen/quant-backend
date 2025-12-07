@@ -62,7 +62,7 @@ public class ClaudeClient {
 
     private String buildRequestBody(String prompt) {
         return String.format(
-            "{\"model\":\"claude-3-haiku-20240307\",\"max_tokens\":1024,\"messages\":[{\"role\":\"user\",\"content\":\"%s\"}]}",
+            "{\"model\":\"claude-3-haiku-20240307\",\"max_tokens\":2048,\"messages\":[{\"role\":\"user\",\"content\":\"%s\"}]}",
             escapeJson(prompt)
         );
     }

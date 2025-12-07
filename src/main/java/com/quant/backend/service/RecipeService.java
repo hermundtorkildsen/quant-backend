@@ -12,9 +12,11 @@ import java.util.*;
 public class RecipeService {
 
     private final RecipeRepository recipeRepository;
+    private final RecipeParserService recipeParserService;
 
-    public RecipeService(RecipeRepository recipeRepository) {
+    public RecipeService(RecipeRepository recipeRepository, RecipeParserService recipeParserService) {
         this.recipeRepository = recipeRepository;
+        this.recipeParserService = recipeParserService;
     }
 
     public List<RecipeDto> getAllRecipes() {
@@ -35,12 +37,25 @@ public class RecipeService {
     }
 
     public RecipeDto importRecipeFromText(ImportRecipeRequestDto request) {
+        // Try AI parsing first
+        RecipeDto aiRecipe = recipeParserService.parseToRecipe(request.getText(), request.getSourceUrl());
+
+        if (aiRecipe != null) {
+            if (aiRecipe.getDescription() == null || aiRecipe.getDescription().isBlank()) {
+                aiRecipe.setDescription("Beskrivelse ikke funnet i teksten. Rediger gjerne denne oppskriften.");
+            }
+            return aiRecipe;
+        }
+        
+        // AI parsing failed - fall back to stub implementation
+        System.err.println("RecipeService: AI parsing failed, using stub fallback");
+        
         // KEEP behavior compatible with existing stub implementation:
         // same JSON structure, same fields, allowed to change text content
         return RecipeDto.builder()
                 .id(UUID.randomUUID().toString())
                 .title("Imported: " + request.getText().substring(0, Math.min(50, request.getText().length())))
-                .description("This is a stub. AI parsing will be implemented later.")
+                .description(request.getText())
                 .servings(4)
                 .ingredients(new ArrayList<>())
                 .steps(new ArrayList<>())
