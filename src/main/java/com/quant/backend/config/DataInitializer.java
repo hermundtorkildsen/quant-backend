@@ -18,7 +18,10 @@ public class DataInitializer {
 
     @PostConstruct
     public void initializeSampleData() {
-        RecipeDto recipe1 = RecipeDto.builder()
+        var recipes = recipeRepository.findAll();
+        
+        if (recipes.isEmpty()) {
+            RecipeDto recipe1 = RecipeDto.builder()
                 .id("1")
                 .title("Classic Margherita Pizza")
                 .description("A traditional Italian pizza with fresh tomatoes, mozzarella, and basil")
@@ -90,8 +93,74 @@ public class DataInitializer {
                         .build())
                 .build();
 
-        recipeRepository.save(recipe1);
-        recipeRepository.save(recipe2);
+            recipeRepository.save(recipe1);
+            recipeRepository.save(recipe2);
+        }
+
+        // Uansett om vi seeded nå eller hadde eksisterende data:
+        updateDemoImageUrlsIfNeeded();
+    }
+
+    private void updateDemoImageUrlsIfNeeded() {
+        var recipes = recipeRepository.findAll();
+        
+        for (RecipeDto recipe : recipes) {
+            if ("Classic Margherita Pizza".equals(recipe.getTitle())) {
+                RecipeMetadataDto metadata = recipe.getMetadata();
+                if (metadata != null) {
+                    String currentImageUrl = metadata.getImageUrl();
+                    if (currentImageUrl == null || currentImageUrl.isEmpty() || 
+                        currentImageUrl.startsWith("https://example.com/")) {
+                        RecipeMetadataDto updatedMetadata = RecipeMetadataDto.builder()
+                                .sourceUrl(metadata.getSourceUrl())
+                                .author(metadata.getAuthor())
+                                .language(metadata.getLanguage())
+                                .categories(metadata.getCategories() != null ? metadata.getCategories() : new java.util.ArrayList<>())
+                                .imageUrl("https://images.unsplash.com/photo-1601924582975-7aa6d6e5d09a")
+                                .calculatorId(metadata.getCalculatorId())
+                                .importMethod(metadata.getImportMethod())
+                                .build();
+                        RecipeDto updated = RecipeDto.builder()
+                                .id(recipe.getId())
+                                .title(recipe.getTitle())
+                                .description(recipe.getDescription())
+                                .servings(recipe.getServings())
+                                .ingredients(recipe.getIngredients())
+                                .steps(recipe.getSteps())
+                                .metadata(updatedMetadata)
+                                .build();
+                        recipeRepository.save(updated);
+                    }
+                }
+            } else if ("Chocolate Chip Cookies".equals(recipe.getTitle())) {
+                RecipeMetadataDto metadata = recipe.getMetadata();
+                if (metadata != null) {
+                    String currentImageUrl = metadata.getImageUrl();
+                    if (currentImageUrl == null || currentImageUrl.isEmpty() || 
+                        currentImageUrl.startsWith("https://example.com/")) {
+                        RecipeMetadataDto updatedMetadata = RecipeMetadataDto.builder()
+                                .sourceUrl(metadata.getSourceUrl())
+                                .author(metadata.getAuthor())
+                                .language(metadata.getLanguage())
+                                .categories(metadata.getCategories() != null ? metadata.getCategories() : new java.util.ArrayList<>())
+                                .imageUrl("https://images.unsplash.com/photo-1601972599720-b0d0b24b4f35")
+                                .calculatorId(metadata.getCalculatorId())
+                                .importMethod(metadata.getImportMethod())
+                                .build();
+                        RecipeDto updated = RecipeDto.builder()
+                                .id(recipe.getId())
+                                .title(recipe.getTitle())
+                                .description(recipe.getDescription())
+                                .servings(recipe.getServings())
+                                .ingredients(recipe.getIngredients())
+                                .steps(recipe.getSteps())
+                                .metadata(updatedMetadata)
+                                .build();
+                        recipeRepository.save(updated);
+                    }
+                }
+            }
+        }
     }
 
 }
