@@ -27,17 +27,17 @@ public class RecipeEntity {
     @Column(name = "servings")
     private Integer servings;
     
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "recipe_ingredients", joinColumns = @JoinColumn(name = "recipe_id"))
     @OrderColumn(name = "ingredient_order")
     private List<IngredientEmbeddable> ingredients = new ArrayList<>();
     
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "recipe_steps", joinColumns = @JoinColumn(name = "recipe_id"))
     @OrderColumn(name = "step_order")
     private List<RecipeStepEmbeddable> steps = new ArrayList<>();
     
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "recipe_categories", joinColumns = @JoinColumn(name = "recipe_id"))
     @Column(name = "category")
     @OrderColumn(name = "category_order")
