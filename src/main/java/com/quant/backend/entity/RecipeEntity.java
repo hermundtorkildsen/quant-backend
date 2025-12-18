@@ -1,0 +1,49 @@
+package com.quant.backend.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "recipes")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class RecipeEntity {
+    @Id
+    @Column(name = "id")
+    private String id;
+    
+    @Column(name = "title", nullable = false)
+    private String title;
+    
+    @Column(name = "description", length = 2000)
+    private String description;
+    
+    @Column(name = "servings")
+    private Integer servings;
+    
+    @ElementCollection
+    @CollectionTable(name = "recipe_ingredients", joinColumns = @JoinColumn(name = "recipe_id"))
+    @OrderColumn(name = "ingredient_order")
+    private List<IngredientEmbeddable> ingredients = new ArrayList<>();
+    
+    @ElementCollection
+    @CollectionTable(name = "recipe_steps", joinColumns = @JoinColumn(name = "recipe_id"))
+    @OrderColumn(name = "step_order")
+    private List<RecipeStepEmbeddable> steps = new ArrayList<>();
+    
+    @ElementCollection
+    @CollectionTable(name = "recipe_categories", joinColumns = @JoinColumn(name = "recipe_id"))
+    @Column(name = "category")
+    @OrderColumn(name = "category_order")
+    private List<String> categories = new ArrayList<>();
+    
+    @Embedded
+    private RecipeMetadataEmbeddable metadata;
+}
+
