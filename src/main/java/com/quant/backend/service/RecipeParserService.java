@@ -82,8 +82,13 @@ public class RecipeParserService {
               - Required. If not obvious, invent a reasonable title based on the recipe text.
 
             - description:
-              - Optional human-readable summary
-              - Can be null if nothing useful is available.
+              - If an explicit description, introduction, or summary paragraph exists in the input text, extract it as-is.
+              - If no description is present in the input, generate a concise 1–2 sentence description based on:
+                - The recipe title
+                - The general cooking method implied by the steps (e.g., baked, fried, simmered, roasted, grilled)
+              - The generated description must NOT invent ingredients that are not in the input.
+              - Keep it concise, neutral, and factual.
+              - Do NOT return null or empty string. Always provide a description.
 
             - servings:
               - Integer or null.
