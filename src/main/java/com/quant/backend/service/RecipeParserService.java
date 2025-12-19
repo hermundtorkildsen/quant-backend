@@ -37,6 +37,10 @@ public class RecipeParserService {
             - If some information is missing, set the corresponding field to null or an empty list where appropriate.
             - If you are unsure about something, still make your best guess, but keep unknown values as null.
             - Do NOT generate an id. Always set "id": null.
+            - LANGUAGE RULE: The entire output must be written in the same language as the input text.
+              - If the input text is Norwegian, generate all fields (including generated descriptions) in Norwegian (Bokmål).
+              - Do NOT translate content that already exists; preserve original wording when extracting.
+              - Only generated fallback descriptions should follow the detected input language.
 
             TARGET JSON STRUCTURE (this is an example, not literal output):
 
