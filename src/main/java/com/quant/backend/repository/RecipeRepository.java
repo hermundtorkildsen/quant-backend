@@ -7,15 +7,14 @@ import java.util.Optional;
 
 public interface RecipeRepository {
 
-    List<RecipeDto> findAll();
+    List<RecipeDto> findAllForUser(String userId);
 
-    Optional<RecipeDto> findById(String id);
+    Optional<RecipeDto> findByIdForUser(String userId, String id);
 
-    RecipeDto save(RecipeDto recipe);
+    RecipeDto saveForUser(String userId, RecipeDto recipe);
 
-    boolean deleteById(String id);
+    boolean deleteByIdForUser(String userId, String id);
 
-    boolean existsById(String id);
-
+    boolean existsByIdForUser(String userId, String id);
 }
 

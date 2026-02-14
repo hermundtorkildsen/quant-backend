@@ -5,6 +5,8 @@ import com.quant.backend.dto.RecipeDto;
 import com.quant.backend.dto.RecipeMetadataDto;
 import com.quant.backend.repository.RecipeRepository;
 import org.springframework.stereotype.Service;
+import com.quant.backend.auth.QuantPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.*;
 
@@ -20,41 +22,46 @@ public class RecipeService {
     }
 
     public List<RecipeDto> getAllRecipes() {
-        return recipeRepository.findAll();
+        return recipeRepository.findAllForUser(currentUserId());
     }
 
     public Optional<RecipeDto> getRecipeById(String id) {
-        return recipeRepository.findById(id);
+        return recipeRepository.findByIdForUser(currentUserId(), id);
     }
 
     public RecipeDto saveRecipe(RecipeDto recipe) {
-        // same behavior as before, just moved out of controller
-        return recipeRepository.save(recipe);
+        return recipeRepository.saveForUser(currentUserId(), recipe);
     }
 
     public boolean deleteRecipe(String id) {
-        return recipeRepository.deleteById(id);
+        return recipeRepository.deleteByIdForUser(currentUserId(), id);
     }
 
+    // 👇 ALT UNDER HER ER UENDRET
+
     public RecipeDto importRecipeFromText(ImportRecipeRequestDto request) {
-        // Try AI parsing first
-        RecipeDto aiRecipe = recipeParserService.parseToRecipe(request.getText(), request.getSourceUrl());
+
+        RecipeDto aiRecipe = recipeParserService.parseToRecipe(
+                request.getText(),
+                request.getSourceUrl()
+        );
 
         if (aiRecipe != null) {
             if (aiRecipe.getDescription() == null || aiRecipe.getDescription().isBlank()) {
-                aiRecipe.setDescription("Beskrivelse ikke funnet i teksten. Rediger gjerne denne oppskriften.");
+                aiRecipe.setDescription(
+                        "Beskrivelse ikke funnet i teksten. Rediger gjerne denne oppskriften."
+                );
             }
             return aiRecipe;
         }
-        
-        // AI parsing failed - fall back to stub implementation
+
         System.err.println("RecipeService: AI parsing failed, using stub fallback");
-        
-        // KEEP behavior compatible with existing stub implementation:
-        // same JSON structure, same fields, allowed to change text content
+
         return RecipeDto.builder()
                 .id(UUID.randomUUID().toString())
-                .title("Imported: " + request.getText().substring(0, Math.min(50, request.getText().length())))
+                .title("Imported: " +
+                        request.getText().substring(0,
+                                Math.min(50, request.getText().length())))
                 .description(request.getText())
                 .servings(4)
                 .ingredients(new ArrayList<>())
@@ -67,5 +74,17 @@ public class RecipeService {
                 .build();
     }
 
-}
+    private String currentUserId() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getPrincipal() == null) {
+            throw new IllegalArgumentException("Not authenticated");
+        }
+        Object p = auth.getPrincipal();
+        if (p instanceof QuantPrincipal qp) {
+            return qp.userId();
+        }
+        throw new IllegalArgumentException("Not authenticated");
+    }
 
+
+}

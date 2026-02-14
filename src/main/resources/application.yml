@@ -2,8 +2,10 @@ server:
   port: 8080
 
 spring:
+  flyway:
+    enabled: false
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:quantdb}
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:quantdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
     username: ${SPRING_DATASOURCE_USERNAME:sa}
     password: ${SPRING_DATASOURCE_PASSWORD:}
   h2:
@@ -23,4 +25,11 @@ logging:
     root: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+quant:
+  jwt:
+    secret: ${QUANT_JWT_SECRET:dev-secret-change-me-please-use-at-least-32-chars}
+    issuer: quant
+    accessTokenMinutes: 10080
+
 

@@ -2,7 +2,6 @@ package com.quant.backend.repository;
 
 import com.quant.backend.dto.*;
 import com.quant.backend.entity.*;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -20,32 +19,33 @@ public class JpaRecipeRepository implements RecipeRepository {
     }
 
     @Override
-    public List<RecipeDto> findAll() {
-        return jpaRepository.findAll().stream()
+    public List<RecipeDto> findAllForUser(String userId) {
+        return jpaRepository.findAllByOwnerUserId(userId).stream()
                 .map(this::entityToDto)
                 .toList();
     }
 
     @Override
-    public Optional<RecipeDto> findById(String id) {
-        return jpaRepository.findById(id)
-                .map(this::entityToDto);
+    public Optional<RecipeDto> findByIdForUser(String userId, String id) {
+        return jpaRepository.findByIdAndOwnerUserId(id, userId).map(this::entityToDto);
     }
 
     @Override
-    public RecipeDto save(RecipeDto recipe) {
+    public RecipeDto saveForUser(String userId, RecipeDto recipe) {
         if (recipe.getId() == null || recipe.getId().isEmpty()) {
             recipe.setId(UUID.randomUUID().toString());
         }
-        
+
         RecipeEntity entity = dtoToEntity(recipe);
+        entity.setOwnerUserId(userId);
+
         RecipeEntity saved = jpaRepository.save(entity);
         return entityToDto(saved);
     }
 
     @Override
-    public boolean deleteById(String id) {
-        if (!jpaRepository.existsById(id)) {
+    public boolean deleteByIdForUser(String userId, String id) {
+        if (!jpaRepository.existsByIdAndOwnerUserId(id, userId)) {
             return false;
         }
         jpaRepository.deleteById(id);
@@ -53,8 +53,8 @@ public class JpaRecipeRepository implements RecipeRepository {
     }
 
     @Override
-    public boolean existsById(String id) {
-        return jpaRepository.existsById(id);
+    public boolean existsByIdForUser(String userId, String id) {
+        return jpaRepository.existsByIdAndOwnerUserId(id, userId);
     }
 
     private RecipeEntity dtoToEntity(RecipeDto dto) {
@@ -63,8 +63,7 @@ public class JpaRecipeRepository implements RecipeRepository {
         entity.setTitle(dto.getTitle());
         entity.setDescription(dto.getDescription());
         entity.setServings(dto.getServings());
-        
-        // Convert ingredients
+
         if (dto.getIngredients() != null) {
             entity.setIngredients(dto.getIngredients().stream()
                     .map(ing -> new IngredientEmbeddable(
@@ -75,8 +74,7 @@ public class JpaRecipeRepository implements RecipeRepository {
                     ))
                     .toList());
         }
-        
-        // Convert steps
+
         if (dto.getSteps() != null) {
             entity.setSteps(dto.getSteps().stream()
                     .map(step -> new RecipeStepEmbeddable(
@@ -86,13 +84,11 @@ public class JpaRecipeRepository implements RecipeRepository {
                     ))
                     .toList());
         }
-        
-        // Convert categories
+
         if (dto.getMetadata() != null && dto.getMetadata().getCategories() != null) {
             entity.setCategories(new ArrayList<>(dto.getMetadata().getCategories()));
         }
-        
-        // Convert metadata
+
         if (dto.getMetadata() != null) {
             RecipeMetadataDto meta = dto.getMetadata();
             RecipeMetadataEmbeddable metadata = new RecipeMetadataEmbeddable();
@@ -104,7 +100,7 @@ public class JpaRecipeRepository implements RecipeRepository {
             metadata.setImportMethod(meta.getImportMethod());
             entity.setMetadata(metadata);
         }
-        
+
         return entity;
     }
 
@@ -114,8 +110,7 @@ public class JpaRecipeRepository implements RecipeRepository {
         dto.setTitle(entity.getTitle());
         dto.setDescription(entity.getDescription());
         dto.setServings(entity.getServings());
-        
-        // Convert ingredients
+
         if (entity.getIngredients() != null) {
             dto.setIngredients(entity.getIngredients().stream()
                     .map(ing -> new IngredientDto(
@@ -126,8 +121,7 @@ public class JpaRecipeRepository implements RecipeRepository {
                     ))
                     .toList());
         }
-        
-        // Convert steps
+
         if (entity.getSteps() != null) {
             dto.setSteps(entity.getSteps().stream()
                     .map(step -> new RecipeStepDto(
@@ -137,8 +131,7 @@ public class JpaRecipeRepository implements RecipeRepository {
                     ))
                     .toList());
         }
-        
-        // Convert metadata
+
         if (entity.getMetadata() != null) {
             RecipeMetadataEmbeddable meta = entity.getMetadata();
             RecipeMetadataDto metadata = RecipeMetadataDto.builder()
@@ -152,8 +145,7 @@ public class JpaRecipeRepository implements RecipeRepository {
                     .build();
             dto.setMetadata(metadata);
         }
-        
+
         return dto;
     }
 }
-

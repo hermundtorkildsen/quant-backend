@@ -17,7 +17,10 @@ public class RecipeEntity {
     @Id
     @Column(name = "id")
     private String id;
-    
+
+    @Column(name = "owner_user_id")
+    private String ownerUserId;
+
     @Column(name = "title", nullable = false)
     private String title;
     
