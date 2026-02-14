@@ -1,5 +1,6 @@
 package com.quant.backend.service;
 
+import com.quant.backend.auth.AdminAccess;
 import com.quant.backend.dto.ImportRecipeRequestDto;
 import com.quant.backend.dto.RecipeDto;
 import com.quant.backend.dto.RecipeMetadataDto;
@@ -15,25 +16,31 @@ public class RecipeService {
 
     private final RecipeRepository recipeRepository;
     private final RecipeParserService recipeParserService;
+    private final AdminAccess adminAccess;
 
-    public RecipeService(RecipeRepository recipeRepository, RecipeParserService recipeParserService) {
+    public RecipeService(RecipeRepository recipeRepository, RecipeParserService recipeParserService, AdminAccess adminAccess) {
         this.recipeRepository = recipeRepository;
         this.recipeParserService = recipeParserService;
+        this.adminAccess = adminAccess;
     }
 
     public List<RecipeDto> getAllRecipes() {
+        if (isAdmin()) return recipeRepository.findAllAdmin();
         return recipeRepository.findAllForUser(currentUserId());
     }
 
     public Optional<RecipeDto> getRecipeById(String id) {
+        if (isAdmin()) return recipeRepository.findByIdAdmin(id);
         return recipeRepository.findByIdForUser(currentUserId(), id);
     }
 
     public RecipeDto saveRecipe(RecipeDto recipe) {
+        if (isAdmin()) return recipeRepository.saveAdmin(recipe);
         return recipeRepository.saveForUser(currentUserId(), recipe);
     }
 
     public boolean deleteRecipe(String id) {
+        if (isAdmin()) return recipeRepository.deleteByIdAdmin(id);
         return recipeRepository.deleteByIdForUser(currentUserId(), id);
     }
 
@@ -84,6 +91,18 @@ public class RecipeService {
             return qp.userId();
         }
         throw new IllegalArgumentException("Not authenticated");
+    }
+
+    private boolean isAdmin() {
+        return adminAccess.isAdminEmail(currentUserEmail());
+    }
+
+    private String currentUserEmail() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getPrincipal() == null) return null;
+        Object p = auth.getPrincipal();
+        if (p instanceof QuantPrincipal qp) return qp.email();
+        return null;
     }
 
 

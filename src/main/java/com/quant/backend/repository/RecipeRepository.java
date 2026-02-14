@@ -16,5 +16,10 @@ public interface RecipeRepository {
     boolean deleteByIdForUser(String userId, String id);
 
     boolean existsByIdForUser(String userId, String id);
+
+    List<RecipeDto> findAllAdmin();
+    Optional<RecipeDto> findByIdAdmin(String id);
+    RecipeDto saveAdmin(RecipeDto recipe);      // bevarer owner_user_id hvis finnes
+    boolean deleteByIdAdmin(String id);
 }
 

@@ -31,5 +31,7 @@ quant:
     secret: ${QUANT_JWT_SECRET:dev-secret-change-me-please-use-at-least-32-chars}
     issuer: quant
     accessTokenMinutes: 10080
+  admin:
+    emails: ${QUANT_ADMIN_EMAILS:}
 
 
