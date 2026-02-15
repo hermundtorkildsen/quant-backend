@@ -70,7 +70,8 @@ public class JpaRecipeRepository implements RecipeRepository {
                             ing.getAmount(),
                             ing.getUnit(),
                             ing.getItem(),
-                            ing.getNotes()
+                            ing.getNotes(),
+                            ing.getSection()
                     ))
                     .toList());
         }
@@ -117,7 +118,8 @@ public class JpaRecipeRepository implements RecipeRepository {
                             ing.getAmount(),
                             ing.getUnit(),
                             ing.getItem(),
-                            ing.getNotes()
+                            ing.getNotes(),
+                            ing.getSection()
                     ))
                     .toList());
         }

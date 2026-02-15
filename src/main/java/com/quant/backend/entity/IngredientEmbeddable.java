@@ -22,5 +22,8 @@ public class IngredientEmbeddable {
     
     @Column(name = "ingredient_notes")
     private String notes;
+
+    @Column(name = "ingredient_section")
+    private String section;
 }
 

@@ -6,6 +6,8 @@ import com.quant.backend.service.RecipeService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+
 import java.util.List;
 
 @RestController
@@ -31,7 +33,7 @@ public class RecipeController {
     }
 
     @PostMapping
-    public ResponseEntity<RecipeDto> saveRecipe(@RequestBody RecipeDto recipeDto) {
+    public ResponseEntity<RecipeDto> saveRecipe(@Valid @RequestBody RecipeDto recipeDto) {
         RecipeDto saved = recipeService.saveRecipe(recipeDto);
         return ResponseEntity.ok(saved);
     }

@@ -6,6 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,16 +20,25 @@ import java.util.List;
 @Builder
 public class RecipeDto {
     private String id;
+
+    @NotBlank(message = "Title is required")
+    @Size(max = 200, message = "Title is too long")
     private String title;
+
+    @Size(max = 5000, message = "Description is too long")
     private String description;
+
+    @Min(value = 1, message = "Servings must be at least 1")
     private Integer servings;
-    
+
+    @Valid
     @Builder.Default
     private List<IngredientDto> ingredients = new ArrayList<>();
-    
+
+    @Valid
     @Builder.Default
     private List<RecipeStepDto> steps = new ArrayList<>();
-    
+
+    @Valid
     private RecipeMetadataDto metadata;
 }
-

@@ -13,5 +13,6 @@ public class IngredientDto {
     private String unit;
     private String item;
     private String notes;
+    private String section;
 }
 

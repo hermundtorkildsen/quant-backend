@@ -18,7 +18,9 @@ public class SecurityConfig {
                 .httpBasic(h -> h.disable())
                 .formLogin(f -> f.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .exceptionHandling(e -> e.authenticationEntryPoint((request, response, authException) -> {
+                    JsonErrorWriter.write(response, 401, "unauthorized", "Missing or invalid authentication");
+                }))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/h2-console/**").permitAll()
                         .anyRequest().authenticated()
