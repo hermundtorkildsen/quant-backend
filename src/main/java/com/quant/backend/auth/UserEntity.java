@@ -19,6 +19,9 @@ public class UserEntity {
     private String id;
 
     @Column(nullable = false, unique = true)
+    private String username;
+
+    @Column(nullable = false, unique = true)
     private String email;
 
     @Column(name = "password_hash", nullable = false)

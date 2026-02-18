@@ -21,19 +21,36 @@ public class AuthService {
     }
 
     public AuthResponse register(RegisterRequest req) {
-        String email = req.getEmail() == null ? "" : req.getEmail().trim().toLowerCase();
 
-        if (email.isBlank() || req.getPassword() == null || req.getPassword().length() < 10) {
+        String email = req.getEmail() == null ? "" : req.getEmail().trim().toLowerCase();
+        String username = req.getUsername() == null ? "" : req.getUsername().trim().toLowerCase();
+        String password = req.getPassword();
+
+        if (email.isBlank() || password == null || password.length() < 10) {
             throw new IllegalArgumentException("Invalid email or password");
         }
+
+        if (username.isBlank() || username.length() < 3 || username.length() > 20) {
+            throw new IllegalArgumentException("Invalid username");
+        }
+
+        if (!username.matches("^[a-z0-9_]+$")) {
+            throw new IllegalArgumentException("Username can only contain letters, numbers and underscore");
+        }
+
         if (userRepo.existsByEmailIgnoreCase(email)) {
             throw new IllegalArgumentException("Email already in use");
         }
 
+        if (userRepo.existsByUsername(username)) {
+            throw new IllegalArgumentException("Username already taken");
+        }
+
         UserEntity user = new UserEntity(
                 UUID.randomUUID().toString(),
+                username,
                 email,
-                encoder.encode(req.getPassword())
+                encoder.encode(password)
         );
 
         userRepo.save(user);
@@ -41,6 +58,7 @@ public class AuthService {
         String token = jwtService.createToken(user.getId(), user.getEmail());
         return new AuthResponse(token);
     }
+
 
     public AuthResponse login(LoginRequest req) {
         String email = req.getEmail() == null ? "" : req.getEmail().trim().toLowerCase();
