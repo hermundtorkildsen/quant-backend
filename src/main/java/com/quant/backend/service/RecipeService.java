@@ -1,6 +1,8 @@
 package com.quant.backend.service;
 
 import com.quant.backend.auth.AdminAccess;
+import com.quant.backend.auth.UserEntity;
+import com.quant.backend.auth.UserJpaRepository;
 import com.quant.backend.dto.ImportRecipeRequestDto;
 import com.quant.backend.dto.RecipeDto;
 import com.quant.backend.dto.RecipeMetadataDto;
@@ -17,11 +19,16 @@ public class RecipeService {
     private final RecipeRepository recipeRepository;
     private final RecipeParserService recipeParserService;
     private final AdminAccess adminAccess;
+    private final UserJpaRepository userRepo;
 
-    public RecipeService(RecipeRepository recipeRepository, RecipeParserService recipeParserService, AdminAccess adminAccess) {
+    public RecipeService(RecipeRepository recipeRepository,
+                         RecipeParserService recipeParserService,
+                         AdminAccess adminAccess,
+                         UserJpaRepository userRepo) {
         this.recipeRepository = recipeRepository;
         this.recipeParserService = recipeParserService;
         this.adminAccess = adminAccess;
+        this.userRepo = userRepo;
     }
 
     public List<RecipeDto> getAllRecipes() {
@@ -80,6 +87,33 @@ public class RecipeService {
                         .build())
                 .build();
     }
+
+    public RecipeDto shareRecipe(String recipeId, String toUsername) {
+        if (toUsername == null || toUsername.isBlank()) {
+            throw new IllegalArgumentException("toUsername is required");
+        }
+
+        String fromUserId = currentUserId();
+
+        RecipeDto original = recipeRepository.findByIdForUser(fromUserId, recipeId)
+                .orElseThrow(() -> new IllegalArgumentException("Recipe not found"));
+
+        UserEntity receiver = userRepo.findByUsername(toUsername.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Receiver not found"));
+
+        UserEntity sender = userRepo.findById(fromUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Sender not found"));
+
+        RecipeDto copy = original.toBuilder()
+                .id(UUID.randomUUID().toString())
+                .sharedFromUserId(sender.getId())
+                .sharedFromUsername(sender.getUsername())
+                .sharedOriginalRecipeId(original.getId())
+                .build();
+
+        return recipeRepository.saveForUser(receiver.getId(), copy);
+    }
+
 
     private String currentUserId() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
