@@ -17,8 +17,22 @@ public class DebugMaintenanceController {
     public DebugMaintenanceController(UserJpaRepository userRepo) {
         this.userRepo = userRepo;
     }
+    public record UpdateUsernameRequest(String username) {}
 
     public record UserRow(String id, String email, String username) {}
+
+    @PutMapping("/users/{id}/username")
+    public String updateUsername(@PathVariable String id,
+                                 @RequestBody UpdateUsernameRequest req) {
+
+        UserEntity user = userRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        user.setUsername(req.username());
+        userRepo.save(user);
+
+        return "OK";
+    }
 
     @DeleteMapping("/users/{id}")
     public String deleteUser(@PathVariable String id) {
