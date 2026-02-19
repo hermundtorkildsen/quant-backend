@@ -20,6 +20,12 @@ public class DebugMaintenanceController {
 
     public record UserRow(String id, String email, String username) {}
 
+    @DeleteMapping("/users/{id}")
+    public String deleteUser(@PathVariable String id) {
+        userRepo.deleteById(id);
+        return "OK";
+    }
+
     @GetMapping("/users")
     public List<UserRow> listUsers() {
         return userRepo.findAll().stream()
