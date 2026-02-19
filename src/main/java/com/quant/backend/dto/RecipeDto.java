@@ -17,7 +17,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class RecipeDto {
     private String id;
 
@@ -41,4 +41,8 @@ public class RecipeDto {
 
     @Valid
     private RecipeMetadataDto metadata;
+
+    private String sharedFromUserId;
+    private String sharedFromUsername;
+    private String sharedOriginalRecipeId;
 }

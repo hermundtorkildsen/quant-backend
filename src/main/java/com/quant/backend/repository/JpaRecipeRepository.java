@@ -39,9 +39,15 @@ public class JpaRecipeRepository implements RecipeRepository {
         RecipeEntity entity = dtoToEntity(recipe);
         entity.setOwnerUserId(userId);
 
+        // settes FØR save (og helst i dtoToEntity også, men ok her)
+        entity.setSharedFromUserId(recipe.getSharedFromUserId());
+        entity.setSharedFromUsername(recipe.getSharedFromUsername());
+        entity.setSharedOriginalRecipeId(recipe.getSharedOriginalRecipeId());
+
         RecipeEntity saved = jpaRepository.save(entity);
         return entityToDto(saved);
     }
+
 
     @Override
     public boolean deleteByIdForUser(String userId, String id) {
@@ -147,6 +153,10 @@ public class JpaRecipeRepository implements RecipeRepository {
                     .build();
             dto.setMetadata(metadata);
         }
+
+        dto.setSharedFromUserId(entity.getSharedFromUserId());
+        dto.setSharedFromUsername(entity.getSharedFromUsername());
+        dto.setSharedOriginalRecipeId(entity.getSharedOriginalRecipeId());
 
         return dto;
     }

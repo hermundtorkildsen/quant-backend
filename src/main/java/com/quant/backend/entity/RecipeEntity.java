@@ -29,6 +29,15 @@ public class RecipeEntity {
     
     @Column(name = "servings")
     private Integer servings;
+
+    @Column(name = "shared_from_user_id")
+    private String sharedFromUserId;
+
+    @Column(name = "shared_from_username")
+    private String sharedFromUsername;
+
+    @Column(name = "shared_original_recipe_id")
+    private String sharedOriginalRecipeId;
     
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "recipe_ingredients", joinColumns = @JoinColumn(name = "recipe_id"))
