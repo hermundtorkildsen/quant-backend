@@ -22,9 +22,15 @@ public class SecurityConfig {
                     JsonErrorWriter.write(response, 401, "unauthorized", "Missing or invalid authentication");
                 }))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/h2-console/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/register",
+                                "/api/auth/**",
+                                "/h2-console/**"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
+
                 .addFilterBefore(
                         new JwtAuthFilter(jwtService),
                         org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class
