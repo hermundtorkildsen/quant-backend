@@ -1,9 +1,11 @@
-package com.quant.backend;
+package com.quant.backend.controller;
 
 import com.quant.backend.auth.UserJpaRepository;
 import com.quant.backend.auth.UserEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/debug")
@@ -14,6 +16,15 @@ public class DebugMaintenanceController {
 
     public DebugMaintenanceController(UserJpaRepository userRepo) {
         this.userRepo = userRepo;
+    }
+
+    public record UserRow(String id, String email, String username) {}
+
+    @GetMapping("/users")
+    public List<UserRow> listUsers() {
+        return userRepo.findAll().stream()
+                .map(u -> new UserRow(u.getId(), u.getEmail(), u.getUsername()))
+                .toList();
     }
 
     public record ResetPasswordRequest(String email, String newPassword) {}
