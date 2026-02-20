@@ -53,16 +53,18 @@ public class RecipeController {
         return ResponseEntity.ok(recipe);
     }
 
-    public record ShareRecipeRequest(String toUsername) {}
+    public record ShareRecipeRequest(String toUsername, String message) {}
 
     @PostMapping("/{id}/share")
-    public ResponseEntity<RecipeDto> shareRecipe(
+    public ResponseEntity<Void> shareRecipe(
             @PathVariable String id,
             @RequestBody ShareRecipeRequest req
     ) {
-        RecipeDto sharedCopy = recipeService.shareRecipe(id, req.toUsername());
-        return ResponseEntity.ok(sharedCopy);
+        recipeService.shareRecipe(id, req.toUsername(), req.message());
+        return ResponseEntity.ok().build();
     }
+
+
 
 }
 

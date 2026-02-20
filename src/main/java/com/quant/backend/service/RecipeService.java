@@ -6,7 +6,10 @@ import com.quant.backend.auth.UserJpaRepository;
 import com.quant.backend.dto.ImportRecipeRequestDto;
 import com.quant.backend.dto.RecipeDto;
 import com.quant.backend.dto.RecipeMetadataDto;
+import com.quant.backend.entity.RecipeEntity;
+import com.quant.backend.entity.RecipeShareEntity;
 import com.quant.backend.repository.RecipeRepository;
+import com.quant.backend.repository.RecipeShareJpaRepository;
 import org.springframework.stereotype.Service;
 import com.quant.backend.auth.QuantPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,15 +23,18 @@ public class RecipeService {
     private final RecipeParserService recipeParserService;
     private final AdminAccess adminAccess;
     private final UserJpaRepository userRepo;
+    private final RecipeShareJpaRepository recipeShareRepo;
 
     public RecipeService(RecipeRepository recipeRepository,
                          RecipeParserService recipeParserService,
                          AdminAccess adminAccess,
-                         UserJpaRepository userRepo) {
+                         UserJpaRepository userRepo,
+                         RecipeShareJpaRepository recipeShareRepo) {
         this.recipeRepository = recipeRepository;
         this.recipeParserService = recipeParserService;
         this.adminAccess = adminAccess;
         this.userRepo = userRepo;
+        this.recipeShareRepo = recipeShareRepo;
     }
 
     public List<RecipeDto> getAllRecipes() {
@@ -88,31 +94,38 @@ public class RecipeService {
                 .build();
     }
 
-    public RecipeDto shareRecipe(String recipeId, String toUsername) {
-        if (toUsername == null || toUsername.isBlank()) {
-            throw new IllegalArgumentException("toUsername is required");
+    public void shareRecipe(String recipeId, String toUsername, String message) {
+
+        final String fromUserId = currentUserId();
+
+// 1) finn original (må eies av avsender)
+        final RecipeDto original = recipeRepository
+                .findByIdForUser(fromUserId, recipeId)
+                .orElseThrow(() -> new RuntimeException("Recipe not found"));
+
+
+        // 2) finn mottaker
+        final UserEntity receiver = userRepo.findByUsername(toUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (receiver.getId().equals(fromUserId)) {
+            throw new RuntimeException("Cannot share recipe with yourself");
         }
 
-        String fromUserId = currentUserId();
+        // 3) opprett share (PENDING)
+        final RecipeShareEntity share = new RecipeShareEntity();
+        share.setId(java.util.UUID.randomUUID().toString());
+        share.setRecipeId(original.getId());
+        share.setFromUserId(fromUserId);
+        share.setToUserId(receiver.getId());
+        share.setMessage(message == null || message.trim().isEmpty() ? null : message.trim());
+        share.setStatus(RecipeShareEntity.Status.PENDING);
+        share.setCreatedAt(java.time.LocalDateTime.now());
+        share.setHandledAt(null);
 
-        RecipeDto original = recipeRepository.findByIdForUser(fromUserId, recipeId)
-                .orElseThrow(() -> new IllegalArgumentException("Recipe not found"));
-
-        UserEntity receiver = userRepo.findByUsername(toUsername.trim())
-                .orElseThrow(() -> new IllegalArgumentException("Receiver not found"));
-
-        UserEntity sender = userRepo.findById(fromUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Sender not found"));
-
-        RecipeDto copy = original.toBuilder()
-                .id(UUID.randomUUID().toString())
-                .sharedFromUserId(sender.getId())
-                .sharedFromUsername(sender.getUsername())
-                .sharedOriginalRecipeId(original.getId())
-                .build();
-
-        return recipeRepository.saveForUser(receiver.getId(), copy);
+        recipeShareRepo.save(share);
     }
+
 
 
     private String currentUserId() {
