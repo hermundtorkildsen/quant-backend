@@ -71,4 +71,10 @@ public class RecipeShareController {
         String userId = currentUserId();
         return shareService.accept(shareId, userId);
     }
+
+    @PostMapping("/{shareId}/decline")
+    public void decline(@PathVariable String shareId) {
+        String userId = currentUserId();
+        shareService.decline(shareId, userId);
+    }
 }

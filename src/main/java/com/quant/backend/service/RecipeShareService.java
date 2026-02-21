@@ -77,6 +77,31 @@ public class RecipeShareService {
         return saved;
     }
 
+    @Transactional
+    public void decline(String shareId, String userId) {
+
+        var share = shareRepo.findForUpdate(shareId, userId)
+                .orElseThrow(() -> new RuntimeException("Share not found"));
+
+        // Idempotency: hvis allerede DECLINED -> ok
+        if (share.getStatus() == RecipeShareEntity.Status.DECLINED) {
+            return;
+        }
+
+        // Hvis allerede ACCEPTED, ikke la den "declines" etterpå
+        if (share.getStatus() == RecipeShareEntity.Status.ACCEPTED) {
+            throw new RuntimeException("Share already accepted");
+        }
+
+        if (share.getStatus() != RecipeShareEntity.Status.PENDING) {
+            throw new RuntimeException("Share is not pending");
+        }
+
+        share.setStatus(RecipeShareEntity.Status.DECLINED);
+        share.setHandledAt(LocalDateTime.now());
+        shareRepo.save(share);
+    }
+
     private RecipeDto deepCopyRecipe(RecipeDto r) {
         var copy = new RecipeDto();
         copy.setTitle(r.getTitle());
