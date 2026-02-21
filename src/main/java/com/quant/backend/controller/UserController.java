@@ -1,8 +1,10 @@
 package com.quant.backend.controller;
 
+import com.quant.backend.auth.QuantPrincipal;
 import com.quant.backend.auth.UserEntity;
 import com.quant.backend.auth.UserJpaRepository;
 import com.quant.backend.dto.UserMeResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -20,14 +22,14 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserMeResponse> me(Authentication authentication) {
 
-        // I ditt oppsett er dette vanligvis email fra JWT
-        String email = authentication.getName();
+        Object p = authentication.getPrincipal();
 
-        UserEntity user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!(p instanceof QuantPrincipal qp)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
-        return ResponseEntity.ok(
-                new UserMeResponse(user.getEmail(), user.getUsername())
-        );
+        return userRepository.findById(qp.userId())
+                .map(u -> ResponseEntity.ok(new UserMeResponse(u.getEmail(), u.getUsername())))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 }
