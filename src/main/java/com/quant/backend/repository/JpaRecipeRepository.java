@@ -158,12 +158,12 @@ public class JpaRecipeRepository implements RecipeRepository {
         dto.setServings(entity.getServings());
         dto.setCoverImageId(entity.getCoverImageId());
 
-        dto.setFavorite(entity.isFavorite());
+        dto.setFavorite(Boolean.TRUE.equals(entity.getFavorite()));
         dto.setFavoritedAt(entity.getFavoritedAt());
         dto.setLastViewedAt(entity.getLastViewedAt());
-        dto.setViewCount(entity.getViewCount());
+        dto.setViewCount(entity.getViewCount() != null ? entity.getViewCount() : 0);
 
-        dto.setPinned(entity.isPinned());
+        dto.setPinned(Boolean.TRUE.equals(entity.getPinned()));
         dto.setPinnedAt(entity.getPinnedAt());
 
         // ------------------
