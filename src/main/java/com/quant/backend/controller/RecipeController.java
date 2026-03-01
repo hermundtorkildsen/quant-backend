@@ -1,7 +1,11 @@
 package com.quant.backend.controller;
 
 import com.quant.backend.dto.ImportRecipeRequestDto;
+import com.quant.backend.dto.RecipeCoverImageRequest;
 import com.quant.backend.dto.RecipeDto;
+import com.quant.backend.dto.RecipeFavoriteRequest;
+import com.quant.backend.dto.RecipePinRequest;
+
 import com.quant.backend.service.RecipeService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -62,6 +66,26 @@ public class RecipeController {
     ) {
         recipeService.shareRecipe(id, req.toUsername(), req.message());
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/view")
+    public RecipeDto markViewed(@PathVariable String id) {
+        return recipeService.markViewed(id);
+    }
+
+    @PutMapping("/{id}/favorite")
+    public RecipeDto setFavorite(@PathVariable String id, @RequestBody RecipeFavoriteRequest req) {
+        return recipeService.setFavorite(id, req.isFavorite());
+    }
+
+    @PutMapping("/{id}/pin")
+    public RecipeDto setPinned(@PathVariable String id, @RequestBody RecipePinRequest req) {
+        return recipeService.setPinned(id, req.isPinned());
+    }
+
+    @PutMapping("/{id}/cover-image")
+    public RecipeDto setCoverImage(@PathVariable String id, @RequestBody RecipeCoverImageRequest req) {
+        return recipeService.setCoverImage(id, req.getCoverImageId());
     }
 
 

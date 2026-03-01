@@ -45,4 +45,11 @@ public class RecipeDto {
     private String sharedFromUserId;
     private String sharedFromUsername;
     private String sharedOriginalRecipeId;
+    private String coverImageId;
+    private Boolean favorite;
+    private java.time.LocalDateTime favoritedAt;
+    private java.time.LocalDateTime lastViewedAt;
+    private Integer viewCount;
+    private Boolean pinned;
+    private java.time.LocalDateTime pinnedAt;
 }

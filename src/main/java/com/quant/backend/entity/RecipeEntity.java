@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +39,27 @@ public class RecipeEntity {
 
     @Column(name = "shared_original_recipe_id")
     private String sharedOriginalRecipeId;
+
+    @Column(name = "cover_image_id")
+    private String coverImageId;
+
+    @Column(name = "is_favorite", nullable = false)
+    private boolean favorite;
+
+    @Column(name = "favorited_at")
+    private LocalDateTime favoritedAt;
+
+    @Column(name = "last_viewed_at")
+    private LocalDateTime lastViewedAt;
+
+    @Column(name = "view_count", nullable = false)
+    private int viewCount;
+
+    @Column(name = "is_pinned", nullable = false)
+    private boolean pinned;
+
+    @Column(name = "pinned_at")
+    private LocalDateTime pinnedAt;
     
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "recipe_ingredients", joinColumns = @JoinColumn(name = "recipe_id"))

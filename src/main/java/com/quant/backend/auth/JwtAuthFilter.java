@@ -64,4 +64,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
+
+    // TODO: SHOULD BE REMOVED IN PROD????
+    @Override
+    protected boolean shouldNotFilterErrorDispatch() {
+        return false;
+    }
 }

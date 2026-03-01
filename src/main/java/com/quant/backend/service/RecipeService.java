@@ -1,20 +1,27 @@
 package com.quant.backend.service;
 
 import com.quant.backend.auth.AdminAccess;
+import com.quant.backend.auth.QuantPrincipal;
 import com.quant.backend.auth.UserEntity;
 import com.quant.backend.auth.UserJpaRepository;
 import com.quant.backend.dto.ImportRecipeRequestDto;
 import com.quant.backend.dto.RecipeDto;
 import com.quant.backend.dto.RecipeMetadataDto;
-import com.quant.backend.entity.RecipeEntity;
 import com.quant.backend.entity.RecipeShareEntity;
 import com.quant.backend.repository.RecipeRepository;
 import com.quant.backend.repository.RecipeShareJpaRepository;
-import org.springframework.stereotype.Service;
-import com.quant.backend.auth.QuantPrincipal;
+import com.quant.backend.service.RecipeParserService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class RecipeService {
@@ -24,6 +31,9 @@ public class RecipeService {
     private final AdminAccess adminAccess;
     private final UserJpaRepository userRepo;
     private final RecipeShareJpaRepository recipeShareRepo;
+
+    @Value("${quant.allow-admin-mutations:false}")
+    private boolean allowAdminMutations; // (ikke brukt når admin er read-only)
 
     public RecipeService(RecipeRepository recipeRepository,
                          RecipeParserService recipeParserService,
@@ -37,6 +47,10 @@ public class RecipeService {
         this.recipeShareRepo = recipeShareRepo;
     }
 
+    // ------------------------
+    // READ (admin kan lese alt)
+    // ------------------------
+
     public List<RecipeDto> getAllRecipes() {
         if (isAdmin()) return recipeRepository.findAllAdmin();
         return recipeRepository.findAllForUser(currentUserId());
@@ -47,17 +61,114 @@ public class RecipeService {
         return recipeRepository.findByIdForUser(currentUserId(), id);
     }
 
+    // ------------------------------------
+    // WRITE (admin er read-only, alltid 403)
+    // ------------------------------------
+
     public RecipeDto saveRecipe(RecipeDto recipe) {
-        if (isAdmin()) return recipeRepository.saveAdmin(recipe);
+        ensureAdminReadOnly();
         return recipeRepository.saveForUser(currentUserId(), recipe);
     }
 
     public boolean deleteRecipe(String id) {
-        if (isAdmin()) return recipeRepository.deleteByIdAdmin(id);
+        ensureAdminReadOnly();
         return recipeRepository.deleteByIdForUser(currentUserId(), id);
     }
 
-    // 👇 ALT UNDER HER ER UENDRET
+    public void shareRecipe(String recipeId, String toUsername, String message) {
+        ensureAdminReadOnly();
+
+        final String fromUserId = currentUserId();
+
+        // 1) finn original (må eies av avsender)
+        final RecipeDto original = recipeRepository
+                .findByIdForUser(fromUserId, recipeId)
+                .orElseThrow(() -> new RuntimeException("Recipe not found"));
+
+        // 2) finn mottaker
+        final UserEntity receiver = userRepo.findByUsername(toUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (receiver.getId().equals(fromUserId)) {
+            throw new RuntimeException("Cannot share recipe with yourself");
+        }
+
+        // 3) opprett share (PENDING)
+        final RecipeShareEntity share = new RecipeShareEntity();
+        share.setId(UUID.randomUUID().toString());
+        share.setRecipeId(original.getId());
+        share.setFromUserId(fromUserId);
+        share.setToUserId(receiver.getId());
+        share.setMessage(message == null || message.trim().isEmpty() ? null : message.trim());
+        share.setStatus(RecipeShareEntity.Status.PENDING);
+        share.setCreatedAt(LocalDateTime.now());
+        share.setHandledAt(null);
+
+        recipeShareRepo.save(share);
+    }
+
+    public RecipeDto markViewed(String recipeId) {
+        ensureAdminReadOnly();
+
+        final String userId = currentUserId();
+
+        RecipeDto recipe = recipeRepository.findByIdForUser(userId, recipeId)
+                .orElseThrow(() -> new RuntimeException("Recipe not found"));
+
+        recipe.setLastViewedAt(LocalDateTime.now());
+        Integer vc = recipe.getViewCount() != null ? recipe.getViewCount() : 0;
+        recipe.setViewCount(vc + 1);
+
+        return recipeRepository.saveForUser(userId, recipe);
+    }
+
+    public RecipeDto setFavorite(String recipeId, boolean favorite) {
+        ensureAdminReadOnly();
+
+        final String userId = currentUserId();
+
+        RecipeDto recipe = recipeRepository.findByIdForUser(userId, recipeId)
+                .orElseThrow(() -> new RuntimeException("Recipe not found"));
+
+        recipe.setFavorite(favorite);
+        recipe.setFavoritedAt(favorite ? LocalDateTime.now() : null);
+
+        return recipeRepository.saveForUser(userId, recipe);
+    }
+
+    public RecipeDto setPinned(String recipeId, boolean pinned) {
+        ensureAdminReadOnly();
+
+        final String userId = currentUserId();
+
+        RecipeDto recipe = recipeRepository.findByIdForUser(userId, recipeId)
+                .orElseThrow(() -> new RuntimeException("Recipe not found"));
+
+        recipe.setPinned(pinned);
+        recipe.setPinnedAt(pinned ? LocalDateTime.now() : null);
+
+        return recipeRepository.saveForUser(userId, recipe);
+    }
+
+    public RecipeDto setCoverImage(String recipeId, String coverImageId) {
+        ensureAdminReadOnly();
+
+        String normalized = (coverImageId != null && !coverImageId.trim().isEmpty())
+                ? coverImageId.trim()
+                : null;
+
+        final String userId = currentUserId();
+
+        RecipeDto recipe = recipeRepository.findByIdForUser(userId, recipeId)
+                .orElseThrow(() -> new RuntimeException("Recipe not found"));
+
+        recipe.setCoverImageId(normalized);
+        return recipeRepository.saveForUser(userId, recipe);
+    }
+
+    // ------------------------
+    // IMPORT (ingen lagring her)
+    // ------------------------
 
     public RecipeDto importRecipeFromText(ImportRecipeRequestDto request) {
 
@@ -94,39 +205,15 @@ public class RecipeService {
                 .build();
     }
 
-    public void shareRecipe(String recipeId, String toUsername, String message) {
+    // ------------------------
+    // Helpers
+    // ------------------------
 
-        final String fromUserId = currentUserId();
-
-// 1) finn original (må eies av avsender)
-        final RecipeDto original = recipeRepository
-                .findByIdForUser(fromUserId, recipeId)
-                .orElseThrow(() -> new RuntimeException("Recipe not found"));
-
-
-        // 2) finn mottaker
-        final UserEntity receiver = userRepo.findByUsername(toUsername)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (receiver.getId().equals(fromUserId)) {
-            throw new RuntimeException("Cannot share recipe with yourself");
+    private void ensureAdminReadOnly() {
+        if (isAdmin()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin is read-only");
         }
-
-        // 3) opprett share (PENDING)
-        final RecipeShareEntity share = new RecipeShareEntity();
-        share.setId(java.util.UUID.randomUUID().toString());
-        share.setRecipeId(original.getId());
-        share.setFromUserId(fromUserId);
-        share.setToUserId(receiver.getId());
-        share.setMessage(message == null || message.trim().isEmpty() ? null : message.trim());
-        share.setStatus(RecipeShareEntity.Status.PENDING);
-        share.setCreatedAt(java.time.LocalDateTime.now());
-        share.setHandledAt(null);
-
-        recipeShareRepo.save(share);
     }
-
-
 
     private String currentUserId() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
@@ -151,6 +238,4 @@ public class RecipeService {
         if (p instanceof QuantPrincipal qp) return qp.email();
         return null;
     }
-
-
 }

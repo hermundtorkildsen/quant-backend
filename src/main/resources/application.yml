@@ -33,5 +33,6 @@ quant:
     accessTokenMinutes: 10080
   admin:
     emails: ${QUANT_ADMIN_EMAILS:}
+  allow-admin-mutations: false
 
 
