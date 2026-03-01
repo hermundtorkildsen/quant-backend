@@ -52,4 +52,6 @@ public class RecipeDto {
     private Integer viewCount;
     private Boolean pinned;
     private java.time.LocalDateTime pinnedAt;
+    private java.time.LocalDateTime createdAt;
+    private java.time.LocalDateTime updatedAt;
 }

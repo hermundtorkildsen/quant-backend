@@ -67,6 +67,17 @@ public class RecipeService {
 
     public RecipeDto saveRecipe(RecipeDto recipe) {
         ensureAdminReadOnly();
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // createdAt settes kun første gang (for eksisterende rader kan den være null i starten)
+        if (recipe.getCreatedAt() == null) {
+            recipe.setCreatedAt(now);
+        }
+
+        // updatedAt settes alltid ved ekte "save/edit"
+        recipe.setUpdatedAt(now);
+
         return recipeRepository.saveForUser(currentUserId(), recipe);
     }
 
