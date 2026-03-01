@@ -43,7 +43,7 @@ public class RecipeEntity {
     @Column(name = "cover_image_id")
     private String coverImageId;
 
-    @Column(name = "is_favorite", nullable = false)
+    @Column(name = "is_favorite")
     private boolean favorite;
 
     @Column(name = "favorited_at")
@@ -52,10 +52,10 @@ public class RecipeEntity {
     @Column(name = "last_viewed_at")
     private LocalDateTime lastViewedAt;
 
-    @Column(name = "view_count", nullable = false)
+    @Column(name = "view_count")
     private int viewCount;
 
-    @Column(name = "is_pinned", nullable = false)
+    @Column(name = "is_pinned")
     private boolean pinned;
 
     @Column(name = "pinned_at")
