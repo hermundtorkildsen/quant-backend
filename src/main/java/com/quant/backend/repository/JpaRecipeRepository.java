@@ -82,6 +82,9 @@ public class JpaRecipeRepository implements RecipeRepository {
         entity.setPinned(Boolean.TRUE.equals(dto.getPinned()));
         entity.setPinnedAt(dto.getPinnedAt());
 
+        entity.setCreatedAt(dto.getCreatedAt());
+        entity.setUpdatedAt(dto.getUpdatedAt());
+
         // ------------------
         // Ingredients
         // ------------------
@@ -165,6 +168,9 @@ public class JpaRecipeRepository implements RecipeRepository {
 
         dto.setPinned(Boolean.TRUE.equals(entity.getPinned()));
         dto.setPinnedAt(entity.getPinnedAt());
+
+        dto.setCreatedAt(entity.getCreatedAt());
+        dto.setUpdatedAt(entity.getUpdatedAt());
 
         // ------------------
         // Ingredients
