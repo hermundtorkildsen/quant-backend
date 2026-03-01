@@ -44,7 +44,7 @@ public class RecipeEntity {
     private String coverImageId;
 
     @Column(name = "is_favorite")
-    private boolean favorite;
+    private Boolean favorite;
 
     @Column(name = "favorited_at")
     private LocalDateTime favoritedAt;
@@ -53,10 +53,10 @@ public class RecipeEntity {
     private LocalDateTime lastViewedAt;
 
     @Column(name = "view_count")
-    private int viewCount;
+    private Integer viewCount;
 
     @Column(name = "is_pinned")
-    private boolean pinned;
+    private Boolean pinned;
 
     @Column(name = "pinned_at")
     private LocalDateTime pinnedAt;
