@@ -35,8 +35,7 @@ public class RecipeParserService {
     - Top-level keys use camelCase (id, title, description, servings, ingredients, steps, metadata).
     - Metadata keys use snake_case (source_url, image_url, calculator_id, import_method).
     - If some information is missing, set the corresponding field to null or an empty list where appropriate.
-    - If you are unsure about something, still make your best guess, but keep unknown values as null.
-    - Do NOT generate an id. Always set "id": null.
+- If you are unsure, do NOT guess. Keep unknown values as null and preserve only what is supported by the input text.    - Do NOT generate an id. Always set "id": null.
     - LANGUAGE RULE: The entire output must be written in the same language as the input text.
       - If the input text is Norwegian, generate all fields (including generated descriptions) in Norwegian (Bokmål).
       - Do NOT translate content that already exists; preserve original wording when extracting.
@@ -124,6 +123,14 @@ public class RecipeParserService {
 
     - steps (array):
       - Break the method/instructions into logical steps.
+        - A step MUST describe a concrete cooking action (an instruction the user should perform).
+                    - DO NOT include as steps:
+                      - references/links to other recipes ("find the recipe here", "see recipe", URLs)
+                      - shopping advice ("you can buy", "available in stores")
+                      - personal opinions or general commentary ("I like", "I prefer", "it varies")
+                      - long background/serving traditions (move to description or notes instead)
+                    - If a paragraph mixes action + commentary, keep ONLY the actionable instruction in "instruction" and move the rest to "notes" (or drop it if not useful).
+                    - Never output URLs anywhere in steps.
       - Keep the original order.
       - Each step object MUST have:
         - step: 1-based integer (1, 2, 3, ...)
