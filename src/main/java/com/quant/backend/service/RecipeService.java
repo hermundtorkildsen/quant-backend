@@ -94,14 +94,14 @@ public class RecipeService {
         // 1) finn original (må eies av avsender)
         final RecipeDto original = recipeRepository
                 .findByIdForUser(fromUserId, recipeId)
-                .orElseThrow(() -> new RuntimeException("Recipe not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Recipe not found"));
 
         // 2) finn mottaker
         final UserEntity receiver = userRepo.findByUsername(toUsername)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         if (receiver.getId().equals(fromUserId)) {
-            throw new RuntimeException("Cannot share recipe with yourself");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot share recipe with yourself");
         }
 
         boolean alreadyPending = recipeShareRepo.existsByRecipeIdAndFromUserIdAndToUserIdAndStatus(
@@ -112,7 +112,7 @@ public class RecipeService {
         );
 
         if (alreadyPending) {
-            throw new RuntimeException("Recipe is already shared with this user");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Recipe is already shared with this user");
         }
 
         // 3) opprett share (PENDING)
