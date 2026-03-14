@@ -1,3 +1,10 @@
 package com.quant.backend.dto;
 
-public record UserMeResponse(String email, String username) {}
+import java.time.Instant;
+
+public record UserMeResponse(
+        String email,
+        String username,
+        Instant createdAt,
+        Instant lastLoginAt
+) {}

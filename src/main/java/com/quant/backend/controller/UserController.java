@@ -29,7 +29,14 @@ public class UserController {
         }
 
         return userRepository.findById(qp.userId())
-                .map(u -> ResponseEntity.ok(new UserMeResponse(u.getEmail(), u.getUsername())))
+                .map(u -> ResponseEntity.ok(
+                        new UserMeResponse(
+                                u.getEmail(),
+                                u.getUsername(),
+                                u.getCreatedAt(),
+                                u.getLastLoginAt()
+                        )
+                ))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 }

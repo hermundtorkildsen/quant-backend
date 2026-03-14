@@ -6,6 +6,7 @@ import com.quant.backend.auth.dto.RegisterRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -46,11 +47,15 @@ public class AuthService {
             throw new IllegalArgumentException("Username already taken");
         }
 
+        Instant now = Instant.now();
+
         UserEntity user = new UserEntity(
                 UUID.randomUUID().toString(),
                 username,
                 email,
-                encoder.encode(password)
+                encoder.encode(password),
+                now,
+                now
         );
 
         userRepo.save(user);
@@ -69,6 +74,9 @@ public class AuthService {
         if (!encoder.matches(req.getPassword(), user.getPasswordHash())) {
             throw new IllegalArgumentException("Invalid credentials");
         }
+
+        user.setLastLoginAt(Instant.now());
+        userRepo.save(user);
 
         String token = jwtService.createToken(user.getId(), user.getEmail());
         return new AuthResponse(token);
