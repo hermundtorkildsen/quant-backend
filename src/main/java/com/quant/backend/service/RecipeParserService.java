@@ -22,6 +22,12 @@ public class RecipeParserService {
             return null;
         }
 
+        //TODO remove
+        System.out.println("=== RECIPE_IMPORT INPUT START ===");
+        System.out.println(recipeText);
+        System.out.println("=== RECIPE_IMPORT INPUT END ===");
+
+
         String prompt = """
     You are a strict JSON-only recipe converter.
 
@@ -165,7 +171,17 @@ public class RecipeParserService {
     RECIPE TEXT:
     """ + "\n\n" + recipeText;
 
-        return claudeClient.complete(prompt);
+
+        // TODO remove
+        String response = claudeClient.complete(prompt);
+
+        System.out.println("=== RECIPE_IMPORT RAW AI RESPONSE START ===");
+        System.out.println(response);
+        System.out.println("=== RECIPE_IMPORT RAW AI RESPONSE END ===");
+
+        return response;
+
+        //return claudeClient.complete(prompt);
     }
 
     public RecipeDto parseToRecipe(String recipeText, String sourceUrl) {
@@ -180,6 +196,12 @@ public class RecipeParserService {
             }
 
             RecipeDto dto = objectMapper.readValue(json, RecipeDto.class);
+
+            // TODO remove
+            System.out.println("=== RECIPE_IMPORT PARSED DTO TITLE ===");
+            System.out.println(dto.getTitle());
+            System.out.println("=== RECIPE_IMPORT PARSED DTO DESCRIPTION ===");
+            System.out.println(dto.getDescription());
 
             if (dto.getMetadata() == null) {
                 dto.setMetadata(RecipeMetadataDto.builder().build());
@@ -201,6 +223,7 @@ public class RecipeParserService {
             return dto;
         } catch (Exception e) {
             System.err.println("RecipeParserService: Failed to parse recipe - " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }
