@@ -29,5 +29,12 @@ public interface RecipeShareJpaRepository extends JpaRepository<RecipeShareEntit
     @Query("delete from RecipeShareEntity s where s.status in :statuses and s.handledAt < :cutoff")
     int deleteHandledOlderThan(@Param("statuses") List<Status> statuses, @Param("cutoff") java.time.LocalDateTime cutoff);
 
+    boolean existsByRecipeIdAndFromUserIdAndToUserIdAndStatus(
+            String recipeId,
+            String fromUserId,
+            String toUserId,
+            RecipeShareEntity.Status status
+    );
+
 
 }

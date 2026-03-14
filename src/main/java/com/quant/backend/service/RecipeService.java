@@ -104,6 +104,17 @@ public class RecipeService {
             throw new RuntimeException("Cannot share recipe with yourself");
         }
 
+        boolean alreadyPending = recipeShareRepo.existsByRecipeIdAndFromUserIdAndToUserIdAndStatus(
+                original.getId(),
+                fromUserId,
+                receiver.getId(),
+                RecipeShareEntity.Status.PENDING
+        );
+
+        if (alreadyPending) {
+            throw new RuntimeException("Recipe is already shared with this user");
+        }
+
         // 3) opprett share (PENDING)
         final RecipeShareEntity share = new RecipeShareEntity();
         share.setId(UUID.randomUUID().toString());
@@ -112,7 +123,9 @@ public class RecipeService {
         share.setToUserId(receiver.getId());
         share.setMessage(message == null || message.trim().isEmpty() ? null : message.trim());
         share.setStatus(RecipeShareEntity.Status.PENDING);
-        share.setCreatedAt(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+
+        share.setCreatedAt(now);
         share.setHandledAt(null);
 
         recipeShareRepo.save(share);

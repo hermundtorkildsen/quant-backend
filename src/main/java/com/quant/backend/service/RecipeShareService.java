@@ -52,25 +52,47 @@ public class RecipeShareService {
         }
 
         // hent original oppskrift (fra avsender)
-        var original = recipeRepository.findByIdForUser(share.getFromUserId(), share.getRecipeId())
-                .orElseThrow(() -> new RuntimeException("Original recipe not found"));
+        var originalOpt = recipeRepository.findByIdForUser(
+                share.getFromUserId(),
+                share.getRecipeId()
+        );
+
+        if (originalOpt.isEmpty()) {
+            throw new RuntimeException(
+                    "Original recipe no longer exists. The share cannot be accepted."
+            );
+        }
+
+        var original = originalOpt.get();
 
         // lag kopi til mottaker (ny id)
         var copy = deepCopyRecipe(original);
         copy.setId(UUID.randomUUID().toString());
 
-        // behold hvem den kom fra (for "Delt av ...")
+        LocalDateTime now = LocalDateTime.now();
+
+// behold hvem den kom fra (for "Delt av ...")
         copy.setSharedFromUserId(share.getFromUserId());
         copy.setSharedFromUsername(
                 userRepo.findById(share.getFromUserId()).map(u -> u.getUsername()).orElse(null)
         );
         copy.setSharedOriginalRecipeId(share.getRecipeId());
 
+// delt oppskrift skal starte "rent" hos mottaker
+        copy.setFavorite(false);
+        copy.setFavoritedAt(null);
+        copy.setPinned(false);
+        copy.setPinnedAt(null);
+        copy.setLastViewedAt(null);
+        copy.setViewCount(0);
+        copy.setCreatedAt(now);
+        copy.setUpdatedAt(now);
+
         var saved = recipeRepository.saveForUser(userId, copy);
 
         // marker share som accepted + lagre importedRecipeId
         share.setStatus(RecipeShareEntity.Status.ACCEPTED);
-        share.setHandledAt(LocalDateTime.now());
+        share.setHandledAt(now);
         share.setImportedRecipeId(saved.getId());
         shareRepo.save(share);
 
@@ -97,8 +119,10 @@ public class RecipeShareService {
             throw new RuntimeException("Share is not pending");
         }
 
+        LocalDateTime now = LocalDateTime.now();
+
         share.setStatus(RecipeShareEntity.Status.DECLINED);
-        share.setHandledAt(LocalDateTime.now());
+        share.setHandledAt(now);
         shareRepo.save(share);
     }
 
