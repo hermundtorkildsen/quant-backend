@@ -6,8 +6,10 @@ import com.quant.backend.dto.*;
 import com.quant.backend.entity.RecipeShareEntity;
 import com.quant.backend.repository.RecipeRepository;
 import com.quant.backend.repository.RecipeShareJpaRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -35,20 +37,23 @@ public class RecipeShareService {
 
         // LOCK share-rowen for å unngå dobbel-accept (dobbelklikk / retries)
         var share = shareRepo.findForUpdate(shareId, userId)
-                .orElseThrow(() -> new RuntimeException("Share not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Share not found"));
 
         // Idempotency: hvis allerede ACCEPTED -> returner samme importerte oppskrift
         if (share.getStatus() == RecipeShareEntity.Status.ACCEPTED) {
             if (share.getImportedRecipeId() == null) {
-                throw new RuntimeException("Share already accepted, but importedRecipeId is missing");
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Share already accepted, but importedRecipeId is missing"
+                );
             }
             return recipeRepository.findByIdForUser(userId, share.getImportedRecipeId())
-                    .orElseThrow(() -> new RuntimeException("Imported recipe not found"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Imported recipe not found"));
         }
 
         // Hvis ikke pending, så er den håndtert (DECLINED) -> gi tydelig feil
         if (share.getStatus() != RecipeShareEntity.Status.PENDING) {
-            throw new RuntimeException("Share is not pending");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Share is not pending");
         }
 
         // hent original oppskrift (fra avsender)
@@ -58,7 +63,8 @@ public class RecipeShareService {
         );
 
         if (originalOpt.isEmpty()) {
-            throw new RuntimeException(
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
                     "Original recipe no longer exists. The share cannot be accepted."
             );
         }
@@ -103,7 +109,7 @@ public class RecipeShareService {
     public void decline(String shareId, String userId) {
 
         var share = shareRepo.findForUpdate(shareId, userId)
-                .orElseThrow(() -> new RuntimeException("Share not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Share not found"));
 
         // Idempotency: hvis allerede DECLINED -> ok
         if (share.getStatus() == RecipeShareEntity.Status.DECLINED) {
@@ -112,11 +118,11 @@ public class RecipeShareService {
 
         // Hvis allerede ACCEPTED, ikke la den "declines" etterpå
         if (share.getStatus() == RecipeShareEntity.Status.ACCEPTED) {
-            throw new RuntimeException("Share already accepted");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Share already accepted");
         }
 
         if (share.getStatus() != RecipeShareEntity.Status.PENDING) {
-            throw new RuntimeException("Share is not pending");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Share is not pending");
         }
 
         LocalDateTime now = LocalDateTime.now();
