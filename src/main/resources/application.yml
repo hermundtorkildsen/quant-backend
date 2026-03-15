@@ -4,6 +4,10 @@ server:
     include-message: always
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
   flyway:
     enabled: ${SPRING_FLYWAY_ENABLED:false}
     baseline-on-migrate: true
