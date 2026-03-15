@@ -30,10 +30,12 @@ public class RecipeParserService {
             return null;
         }
 
-        //TODO remove
-        System.out.println("=== RECIPE_IMPORT INPUT START ===");
-        System.out.println(recipeText);
-        System.out.println("=== RECIPE_IMPORT INPUT END ===");
+        String normalizedRecipeText = normalizeRecipeText(recipeText);
+        if (normalizedRecipeText == null || normalizedRecipeText.isEmpty()) {
+            return null;
+        }
+
+        logBlock("RECIPE_IMPORT INPUT", normalizedRecipeText);
 
 
         String prompt = """
@@ -55,13 +57,18 @@ public class RecipeParserService {
       - If the input text is Norwegian, generate all fields (including generated descriptions) in Norwegian (Bokmål).
       - Do NOT translate content that already exists; preserve original wording when extracting.
       - Only generated fallback descriptions should follow the detected input language.
+    - The input may come from copied text, PDF extraction, DOCX extraction, or OCR-like text.
+    - Preserve recipe meaning even if spacing or line breaks are imperfect.
+    - If an ingredient is split across nearby lines, combine it into one logical ingredient when the meaning is clear.
+    - Ignore obvious non-recipe noise such as page numbers, isolated headers/footers, repeated file artifacts, and standalone decorative text.
+    - Do NOT treat section headings as ingredients or steps.
 
     TARGET JSON STRUCTURE (this is an example, not literal output):
 
     {
       "id": null,
       "title": "Recipe title",
-      "description": "Short description or null",
+      "description": "Short description",
       "servings": 4,
       "ingredients": [
         {
@@ -116,6 +123,8 @@ public class RecipeParserService {
 
     - ingredients (array):
       - Try to extract one ingredient per logical line.
+      - If amount, unit, and ingredient name are split across adjacent lines because of formatting, combine them when the meaning is clear.
+      - Ignore isolated formatting fragments that are clearly not ingredients.
       - Each ingredient object MUST have:
         - amount: number or null (e.g. 400, 1.5)
         - unit: string or null (normalized where possible, e.g. "g", "kg", "ml", "dl", "l", "ts", "ss", "cup")
@@ -137,6 +146,7 @@ public class RecipeParserService {
         - If you are not confident, keep section = null. Do NOT invent sections.
 
     - steps (array):
+      - Merge broken lines that clearly belong to the same instruction.
       - Break the method/instructions into logical steps.
       - Keep the original order.
       - A step MUST describe a concrete cooking action (an instruction the user should perform).
@@ -177,7 +187,7 @@ public class RecipeParserService {
     REMEMBER: OUTPUT ONLY JSON, NO MARKDOWN, NO EXPLANATIONS.
 
     RECIPE TEXT:
-    """ + "\n\n" + recipeText;
+    """ + "\n\n" + normalizedRecipeText;
 
 
         // TODO remove
@@ -357,6 +367,10 @@ public class RecipeParserService {
     - Read only what is actually visible in the image.
     - Ignore decorative/background text that is not part of the recipe.
     - If parts are unreadable, do not guess.
+    - Handwritten recipes may be difficult to read. Only extract what is reasonably legible.
+    - If text is partially unreadable, keep unknown values as null instead of guessing.
+    - Do not invent missing lines, ingredients, or quantities.
+    - Ignore decorative elements, shadows, table backgrounds, and irrelevant surrounding text.
 
     RETURN EXACTLY ONE JSON OBJECT.
     OUTPUT ONLY JSON.
@@ -468,12 +482,44 @@ public class RecipeParserService {
                 return null;
             }
 
-            return parseToRecipe(extractedText, null);
+            String normalizedExtractedText = normalizeRecipeText(extractedText);
+            if (normalizedExtractedText == null || normalizedExtractedText.isEmpty()) {
+                return null;
+            }
+
+            logBlock("RECIPE_FILE_EXTRACTED_TEXT", normalizedExtractedText);
+
+            return parseToRecipe(normalizedExtractedText, null);
         } catch (Exception e) {
             System.err.println("RecipeParserService: Failed to parse file to recipe - " + e.getMessage());
             e.printStackTrace();
             return null;
         }
+    }
+
+    private String normalizeRecipeText(String input) {
+        if (input == null) {
+            return null;
+        }
+
+        String normalized = input;
+
+        normalized = normalized.replace("\r\n", "\n");
+        normalized = normalized.replace('\r', '\n');
+
+        normalized = normalized.replace('\u00A0', ' ');
+
+        normalized = normalized.replaceAll("[\\t ]+", " ");
+        normalized = normalized.replaceAll(" *\\n *", "\n");
+        normalized = normalized.replaceAll("\\n{3,}", "\n\n");
+
+        return normalized.trim();
+    }
+
+    private void logBlock(String label, String value) {
+        System.out.println("=== " + label + " START ===");
+        System.out.println(value);
+        System.out.println("=== " + label + " END ===");
     }
 
 }
