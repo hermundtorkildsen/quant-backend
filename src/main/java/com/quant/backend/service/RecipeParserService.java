@@ -5,6 +5,7 @@ import com.quant.backend.ai.ClaudeClient;
 import com.quant.backend.dto.RecipeDto;
 import com.quant.backend.dto.RecipeMetadataDto;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class RecipeParserService {
@@ -223,6 +224,188 @@ public class RecipeParserService {
             return dto;
         } catch (Exception e) {
             System.err.println("RecipeParserService: Failed to parse recipe - " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String parseImageRaw(MultipartFile imageFile) {
+        if (imageFile == null || imageFile.isEmpty()) {
+            return null;
+        }
+
+        try {
+            String mediaType = imageFile.getContentType();
+            if (mediaType == null || mediaType.isBlank()) {
+                mediaType = "image/jpeg";
+            }
+
+            String prompt = """
+    You are a strict JSON-only recipe converter.
+
+    Your ONLY job is to read a recipe from the provided image and return a single JSON object that matches EXACTLY the structure described below.
+
+    IMPORTANT OUTPUT RULES:
+    - Output MUST be valid JSON.
+    - Output MUST NOT be wrapped in markdown.
+    - Do NOT include comments or explanations.
+    - Do NOT include any extra fields not defined in the schema.
+    - Top-level keys use camelCase (id, title, description, servings, ingredients, steps, metadata).
+    - Metadata keys use snake_case (source_url, image_url, calculator_id, import_method).
+    - If some information is missing, set the corresponding field to null or an empty list where appropriate.
+    - If you are unsure, do NOT guess. Keep unknown values as null and preserve only what is supported by the image.
+    - Do NOT generate an id. Always set "id": null.
+    - LANGUAGE RULE: The entire output must be written in the same language as the recipe in the image.
+      - If the recipe is Norwegian, generate all fields in Norwegian (Bokmål).
+      - Do NOT translate content that already exists; preserve original wording when extracting.
+      - Only generated fallback descriptions should follow the detected language.
+
+    TARGET JSON STRUCTURE:
+
+    {
+      "id": null,
+      "title": "Recipe title",
+      "description": "Short description",
+      "servings": 4,
+      "ingredients": [
+        {
+          "amount": 400.0,
+          "unit": "g",
+          "item": "spaghetti",
+          "notes": "finhakket",
+          "section": null
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "instruction": "First step.",
+          "notes": null
+        }
+      ],
+      "metadata": {
+        "source_url": null,
+        "author": null,
+        "language": null,
+        "categories": [],
+        "image_url": null,
+        "calculator_id": null,
+        "import_method": "image"
+      }
+    }
+
+    DETAILED FIELD RULES:
+
+    - id:
+      - MUST always be present
+      - MUST always be null
+
+    - title:
+      - Short recipe title
+      - Required. If not obvious, invent a reasonable title based on the visible recipe.
+
+    - description:
+      - If an explicit description, introduction, or summary exists in the image, extract it as-is.
+      - If no description is present, generate a concise 1–2 sentence description based on the visible recipe.
+      - Do NOT invent ingredients that are not visible.
+      - Do NOT return null or empty string. Always provide a description.
+
+    - servings:
+      - Integer or null.
+      - Parse if clearly visible.
+      - If unsure, use null.
+
+    - ingredients (array):
+      - Extract one ingredient per logical line where possible.
+      - Each ingredient object MUST have:
+        - amount: number or null
+        - unit: string or null
+        - item: ingredient name
+        - notes: extra info or null
+        - section: string or null
+      - If amount is missing or unclear, set amount = null.
+      - If unit is missing or unnecessary, set unit = null.
+      - If section headings are visible, use them. Otherwise section = null.
+
+    - steps (array):
+      - Break visible instructions into logical steps.
+      - Keep original order.
+      - A step MUST describe a concrete cooking action.
+      - Do NOT include links, URLs, shopping advice, or commentary as steps.
+      - Each step object MUST have:
+        - step: 1-based integer
+        - instruction: the main step text
+        - notes: null or small extra note if needed
+
+    - metadata:
+      - source_url: null
+      - author: null
+      - language: "no" or "en" if obvious, otherwise null
+      - categories: array of strings, or []
+      - image_url: null
+      - calculator_id: null
+      - import_method: always "image"
+
+    IMPORTANT IMAGE RULES:
+    - Read only what is actually visible in the image.
+    - Ignore decorative/background text that is not part of the recipe.
+    - If parts are unreadable, do not guess.
+
+    RETURN EXACTLY ONE JSON OBJECT.
+    OUTPUT ONLY JSON.
+    """;
+
+            String response = claudeClient.completeWithImage(
+                    prompt,
+                    imageFile.getBytes(),
+                    mediaType
+            );
+
+            System.out.println("=== RECIPE_IMAGE_IMPORT RAW AI RESPONSE START ===");
+            System.out.println(response);
+            System.out.println("=== RECIPE_IMAGE_IMPORT RAW AI RESPONSE END ===");
+
+            return response;
+        } catch (Exception e) {
+            System.err.println("RecipeParserService: Failed to parse image raw - " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public RecipeDto parseImageToRecipe(MultipartFile imageFile) {
+        if (imageFile == null || imageFile.isEmpty()) {
+            return null;
+        }
+
+        try {
+            String json = parseImageRaw(imageFile);
+            if (json == null || json.trim().isEmpty()) {
+                return null;
+            }
+
+            RecipeDto dto = objectMapper.readValue(json, RecipeDto.class);
+
+            if (dto.getMetadata() == null) {
+                dto.setMetadata(RecipeMetadataDto.builder().build());
+            }
+
+            RecipeMetadataDto metadata = dto.getMetadata();
+            RecipeMetadataDto updatedMetadata = RecipeMetadataDto.builder()
+                    .sourceUrl(null)
+                    .author(metadata.getAuthor())
+                    .language(metadata.getLanguage())
+                    .categories(metadata.getCategories() != null ? metadata.getCategories() : new java.util.ArrayList<>())
+                    .imageUrl(metadata.getImageUrl())
+                    .calculatorId(metadata.getCalculatorId())
+                    .importMethod("image")
+                    .build();
+
+            dto.setMetadata(updatedMetadata);
+
+            return dto;
+        } catch (Exception e) {
+            System.err.println("RecipeParserService: Failed to parse image to recipe - " + e.getMessage());
             e.printStackTrace();
             return null;
         }

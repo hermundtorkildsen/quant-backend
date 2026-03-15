@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -227,6 +228,22 @@ public class RecipeService {
                         .categories(new ArrayList<>())
                         .build())
                 .build();
+    }
+
+    public RecipeDto importRecipeFromImage(MultipartFile image) {
+        RecipeDto aiRecipe = recipeParserService.parseImageToRecipe(image);
+
+        if (aiRecipe != null) {
+            if (aiRecipe.getDescription() == null || aiRecipe.getDescription().isBlank()) {
+                aiRecipe.setDescription(
+                        "Beskrivelse ikke funnet i bildet. Rediger gjerne denne oppskriften."
+                );
+            }
+            return aiRecipe;
+        }
+
+        System.err.println("RecipeService: AI image parsing failed, returning null");
+        return null;
     }
 
     // ------------------------

@@ -7,10 +7,12 @@ import com.quant.backend.dto.RecipeFavoriteRequest;
 import com.quant.backend.dto.RecipePinRequest;
 
 import com.quant.backend.service.RecipeService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -54,6 +56,12 @@ public class RecipeController {
     @PostMapping("/import-text")
     public ResponseEntity<RecipeDto> importRecipeFromText(@RequestBody ImportRecipeRequestDto request) {
         RecipeDto recipe = recipeService.importRecipeFromText(request);
+        return ResponseEntity.ok(recipe);
+    }
+
+    @PostMapping(value = "/import-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<RecipeDto> importRecipeFromImage(@RequestPart("image") MultipartFile image) {
+        RecipeDto recipe = recipeService.importRecipeFromImage(image);
         return ResponseEntity.ok(recipe);
     }
 
