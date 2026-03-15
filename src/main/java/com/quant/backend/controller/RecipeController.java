@@ -65,6 +65,19 @@ public class RecipeController {
         return ResponseEntity.ok(recipe);
     }
 
+    @PostMapping("/import-file")
+    public ResponseEntity<RecipeDto> importRecipeFromFile(
+            @RequestParam("file") MultipartFile file
+    ) {
+        RecipeDto recipe = recipeService.importRecipeFromFile(file);
+
+        if (recipe == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        return ResponseEntity.ok(recipe);
+    }
+
     public record ShareRecipeRequest(String toUsername, String message) {}
 
     @PostMapping("/{id}/share")

@@ -246,6 +246,26 @@ public class RecipeService {
         return null;
     }
 
+    public RecipeDto importRecipeFromFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
+        RecipeDto aiRecipe = recipeParserService.parseFileToRecipe(file);
+
+        if (aiRecipe != null) {
+            if (aiRecipe.getDescription() == null || aiRecipe.getDescription().isBlank()) {
+                aiRecipe.setDescription(
+                        "Beskrivelse ikke funnet i filen. Rediger gjerne denne oppskriften."
+                );
+            }
+            return aiRecipe;
+        }
+
+        System.err.println("RecipeService: file parsing failed, returning null");
+        return null;
+    }
+
     // ------------------------
     // Helpers
     // ------------------------

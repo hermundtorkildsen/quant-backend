@@ -4,8 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.backend.ai.ClaudeClient;
 import com.quant.backend.dto.RecipeDto;
 import com.quant.backend.dto.RecipeMetadataDto;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class RecipeParserService {
@@ -406,6 +413,64 @@ public class RecipeParserService {
             return dto;
         } catch (Exception e) {
             System.err.println("RecipeParserService: Failed to parse image to recipe - " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String extractTextFromFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
+        try {
+            String originalFilename = file.getOriginalFilename();
+            String lowerName = originalFilename != null ? originalFilename.toLowerCase() : "";
+            String contentType = file.getContentType();
+
+            if (lowerName.endsWith(".txt") || "text/plain".equalsIgnoreCase(contentType)) {
+                return new String(file.getBytes(), StandardCharsets.UTF_8);
+            }
+
+            if (lowerName.endsWith(".pdf") || "application/pdf".equalsIgnoreCase(contentType)) {
+                try (var pdf = Loader.loadPDF(file.getBytes())) {
+                    PDFTextStripper stripper = new PDFTextStripper();
+                    return stripper.getText(pdf);
+                }
+            }
+
+            if (lowerName.endsWith(".docx")
+                    || "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    .equalsIgnoreCase(contentType)) {
+                try (ByteArrayInputStream inputStream = new ByteArrayInputStream(file.getBytes());
+                     XWPFDocument document = new XWPFDocument(inputStream);
+                     XWPFWordExtractor extractor = new XWPFWordExtractor(document)) {
+                    return extractor.getText();
+                }
+            }
+
+            return null;
+        } catch (Exception e) {
+            System.err.println("RecipeParserService: Failed to extract text from file - " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public RecipeDto parseFileToRecipe(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
+        try {
+            String extractedText = extractTextFromFile(file);
+            if (extractedText == null || extractedText.trim().isEmpty()) {
+                return null;
+            }
+
+            return parseToRecipe(extractedText, null);
+        } catch (Exception e) {
+            System.err.println("RecipeParserService: Failed to parse file to recipe - " + e.getMessage());
             e.printStackTrace();
             return null;
         }
